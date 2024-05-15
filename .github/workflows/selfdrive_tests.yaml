@@ -334,25 +334,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
-          ref: ${{ github.event.pull_request.base.ref }}
-      - run: git lfs pull
-      - uses: ./.github/workflows/setup-with-retry
-      - name: Get base car info
-        run: |
-          ${{ env.RUN }} "scons -j$(nproc) && python selfdrive/debug/dump_car_docs.py --path /tmp/openpilot_cache/base_car_docs"
-          sudo chown -R $USER:$USER ${{ github.workspace }}
+          submodules: false
+          sparse-checkout: |
+            docs/CARS.md
+            selfdrive/debug/print_car_docs_diff.py
+          sparse-checkout-cone-mode: false
       - uses: actions/checkout@v4
         with:
-          submodules: true
-          path: current
-      - run: cd current && git lfs pull
+          path: base
+          submodules: false
+          ref: ${{ github.event.pull_request.base.ref }}
+          sparse-checkout: |
+            docs/CARS.md
+          sparse-checkout-cone-mode: false
       - name: Save car docs diff
         id: save_diff
         run: |
-          cd current
-          ${{ env.RUN }} "scons -j$(nproc)"
-          output=$(${{ env.RUN }} "python selfdrive/debug/print_docs_diff.py --path /tmp/openpilot_cache/base_car_docs")
+          output=$(${{ env.RUN }} "python selfdrive/debug/print_car_docs_diff.py --base base/docs/CARS.md")
           output="${output//$'\n'/'%0A'}"
           echo "::set-output name=diff::$output"
       - name: Find comment
